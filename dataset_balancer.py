@@ -239,7 +239,7 @@ def analyze_and_balance_dataset(
     logger.info("\n=== Class distribution before balancing ===")
     label_counts = df["label"].value_counts().sort_index()
     for label, count in label_counts.items():
-        emotion_name = EMOTION_MAP.get(label, "unknown")
+        emotion_name = EMOTION_MAP.get(label, "unknown")  #type:ignore
         logger.info(f"  {emotion_name} (class {label}): {count} samples")
     
     # Step 5: Balance dataset
@@ -262,7 +262,7 @@ def analyze_and_balance_dataset(
     logger.info("\n=== Final class distribution ===")
     final_counts = df_balanced["label"].value_counts().sort_index()
     for label, count in final_counts.items():
-        emotion_name = EMOTION_MAP.get(label, "unknown")
+        emotion_name = EMOTION_MAP.get(label, "unknown")  #type:ignore
         logger.info(f"  {emotion_name} (class {label}): {count} samples")
     
     # Step 7: Save
@@ -280,11 +280,11 @@ def analyze_and_balance_dataset(
             "original_total_samples": len(raw_df),
             "unknown_labels_filtered": int(unknown_count) if filter_unknown else 0,
             "before_balancing": {
-                "total": {EMOTION_MAP[k]: int(v) for k, v in label_counts.items()},
+                "total": {EMOTION_MAP[k]: int(v) for k, v in label_counts.items()}, #type:ignore
                 "by_dataset": {}
             },
             "after_balancing": {
-                "total": {EMOTION_MAP[k]: int(v) for k, v in final_counts.items()},
+                "total": {EMOTION_MAP[k]: int(v) for k, v in final_counts.items()}, #type:ignore
                 "by_dataset": {}
             }
         }
