@@ -1,0 +1,101 @@
+# configs/default.yaml
+# ─────────────────────────────────────────────────────────────────────────────
+# Q1 Emotion Recognition Framework – Default Training Configuration
+# ─────────────────────────────────────────────────────────────────────────────
+# Load with: from utils import load_yaml; cfg = load_yaml("configs/default.yaml")
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Reproducibility ──────────────────────────────────────────────────────────
+seed: 42
+deterministic: true          # True = fully deterministic (slower); False = faster
+
+# ── Dataset Split ────────────────────────────────────────────────────────────
+val_split: 0.15              # Fraction of data reserved for validation (tuning)
+test_split: 0.15             # Fraction of data reserved for independent testing (reporting)
+save_split_indices: true     # Persist train/val indices to disk for exact reproducibility
+
+# ── Model ────────────────────────────────────────────────────────────────────
+model: convnext_v2
+num_classes: 7
+input_size_warm: 224         # Resolution during warmup phase
+input_size_ft: 256           # Resolution during fine-tune phase (higher = better accuracy)
+pretrained: true
+
+# ── Training Schedule ────────────────────────────────────────────────────────
+epochs_warm: 3               # Warmup epochs (backbone frozen except head)
+epochs_ft: 20                # Fine-tune epochs (full network)
+batch_size: 32
+grad_accum_steps: 2          # Gradient accumulation steps
+                             # effective_batch_size = batch_size × grad_accum_steps = 32 × 2 = 64
+                             # Gradients are accumulated over 2 mini-batches before each optimiser step.
+max_grad_norm: 5.0           # Gradient clipping max norm (null to disable)
+
+# ── Learning Rate ─────────────────────────────────────────────────────────────
+lr: 3.0e-5                   # Base learning rate for ConvNeXt-V2
+weight_decay: 0.05
+backbone_lr_ratio: 0.1       # Backbone LR = lr * ft_lr_ratio * backbone_lr_ratio during FT
+ft_lr_ratio: 0.3             # Fine-tune head LR = lr * ft_lr_ratio
+
+# ── Regularisation ───────────────────────────────────────────────────────────
+label_smoothing: 0.1
+head_dropout: 0.2
+use_focal_loss: false
+focal_gamma: 2.0
+
+# ── Sampling / Evaluation ──────────────────────────────────────────────────────
+use_class_sampler: false     # Disabled when balance_dataset=true (avoids double-weighting)
+use_tta: true                # Horizontal-flip TTA on final val/test evaluation (+0.5-1.5% acc)
+
+# ── Early Stopping ───────────────────────────────────────────────────────────
+early_stop: 10               # Number of epochs without improvement before stopping
+
+# ── Augmentation ─────────────────────────────────────────────────────────────
+use_mixup: true
+mixup_alpha: 0.4             # Beta distribution parameter for MixUp blending
+mixup_prob: 0.5              # Probability of applying MixUp to a batch
+use_cutmix: false
+cutmix_alpha: 1.0            # Beta distribution parameter for CutMix blending
+cutmix_prob: 0.5             # Probability of applying CutMix to a batch
+randaugment: true
+randaugment_num_ops: 2       # Number of random operations applied in RandAugment
+randaugment_magnitude: 9     # Strength/magnitude of operations in RandAugment
+use_novel_aug: true
+fourier_aug_p: 0.4           # FourierAugment frequency perturbation probability
+contrastive_noise_p: 0.3     # Contrastive noise injection probability
+augmix_lite_p: 0.4           # AugMixLite multi-path stochastic blending probability
+random_erasing_p: 0.2        # Probability of applying Random Erasing on normalized tensor
+
+# ── Dataset Balancing ────────────────────────────────────────────────────────
+balance_dataset: true
+balance_method: both         # "oversample" | "undersample" | "both"
+min_samples_per_class: 8000
+max_samples_per_class: 8000  # 7 × 8000 = 56,000 samples (use "auto" for max available)
+
+# ── Hardware / Performance ───────────────────────────────────────────────────
+device: auto                 # "auto" = cuda if available else cpu
+num_workers: auto            # "auto" = 0 on Windows CPU, else min(8, cpu_count)
+use_amp: auto                # "auto" = true on CUDA, false on CPU
+channels_last: auto          # "auto" = true on CUDA
+use_torch_compile: false     # torch.compile (PyTorch 2.0+); set false for stability
+pin_memory: auto             # "auto" = true on CUDA
+prefetch_factor: auto        # "auto" = 4 on GPU, 1 on CPU
+use_ema: true                # Exponential Moving Average of model weights
+ema_decay: 0.9997
+
+# ── Checkpointing ────────────────────────────────────────────────────────────
+save_full_checkpoint: true   # Save optimizer+scheduler state alongside weights
+
+# ── Logging ──────────────────────────────────────────────────────────────────
+log_csv: true                # Write per-epoch CSV log to results_dir/training_log.csv
+
+# ── Output ───────────────────────────────────────────────────────────────────
+results_dir: Results_Q1
+
+# ── Post-Training Evaluation Pipeline (Reviewer fixes) ─────────────────────
+run_benchmark_eval: true      # Per-dataset standard-split evaluation
+run_baselines: false           # Train ResNet-18 etc. under identical protocol (slow)
+baseline_models: [resnet18, efficientnet_b0]
+run_cross_dataset: true       # Cross-dataset eval + domain-shift diagnosis
+run_ablation: false            # Full ablation with 3 seeds (very slow — enable explicitly)
+ablation_seeds: [42, 123, 456]
+export_repro_bundle: true      # Package scripts + splits + weights for GitHub release

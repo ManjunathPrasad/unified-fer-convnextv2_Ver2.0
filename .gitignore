@@ -1,0 +1,158 @@
+# ============================================================
+# Python
+# ============================================================
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env/
+emotion_q1_framework/
+# Packaging
+*.egg
+*.egg-info/
+dist/
+build/
+develop-eggs/
+.eggs/
+pip-wheel-metadata/
+
+# ============================================================
+# Jupyter Notebook
+# ============================================================
+
+.ipynb_checkpoints/
+
+# ============================================================
+# IDE / Editor
+# ============================================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# ============================================================
+# Environment / Secrets
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# Machine Learning / Deep Learning
+# ============================================================
+
+# Model checkpoints
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+
+# Training checkpoints / saved models
+checkpoints/
+models/
+weights/
+
+# ============================================================
+# Experiment Outputs
+# ============================================================
+
+outputs/
+output/
+results/
+runs/
+logs/
+wandb/
+tensorboard/
+mlruns/
+
+# Generated plots / figures
+plots/
+figures/
+
+# Generated tables / reports
+generated/
+reports/
+
+# ============================================================
+# Datasets
+# ============================================================
+
+# Raw datasets
+Dataset/AffectNet/
+Dataset/FER2013/
+Dataset/affectnet/
+Dataset/fer2013/
+
+# Dataset images
+Dataset/images/
+
+# Prepared / processed datasets
+Dataset/prepared/
+
+# Dataset archives
+Dataset/*.zip
+Dataset/*.tar
+Dataset/*.tar.gz
+Dataset/*.7z
+
+# Dataset CSV files
+Dataset/*.csv
+
+# ============================================================
+# Temporary / Cache Files
+# ============================================================
+
+*.tmp
+*.temp
+*.cache
+*.bak
+*.log
+
+# Temporary Python files
+*.pickle
+*.pkl
+
+# ============================================================
+# OS Files
+# ============================================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ============================================================
+# Project-specific generated files
+# ============================================================
+
+# Experiment artifacts
+experiment_outputs/
+benchmark_outputs/
+ablation_outputs/
+
+# Generated CSV/JSON results
+*_results.csv
+*_results.json
+*_metrics.csv
+*_metrics.json
+
+# Generated model predictions
+predictions/
+preds/
+
+# ============================================================
+# Local configuration
+# ============================================================
+
+*.local
+config.local.*
