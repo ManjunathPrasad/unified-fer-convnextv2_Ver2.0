@@ -89,7 +89,7 @@ def main():
     print("\nTEST 1 — OLD logic double-remap scrambles RAF-DB labels")
     once = raw["label"].apply(old_map_rafdb)                 # prepare stage
     twice = once.apply(old_map_rafdb)                        # cross-dataset stage
-    n_scrambled = int((twice.values != raw["gt_canonical"].values).sum()) #type:ignore
+    n_scrambled = int((twice.values != raw["gt_canonical"].values).sum())
     if n_scrambled > 0:
         ok(f"reproduced the bug: {n_scrambled}/{len(raw)} labels scrambled "
            f"after a second remap (this is the 10.69%% collapse cause)")
@@ -121,10 +121,10 @@ def main():
     mapped = map_labels_to_emotions(raw.drop(columns=["gt_canonical"]), "RAFDB")
     mapped = mapped.sort_values("image_path").reset_index(drop=True)
     gt = raw.sort_values("image_path").reset_index(drop=True)["gt_canonical"]
-    if (mapped["label"].values == gt.values).all(): #type:ignore
+    if (mapped["label"].values == gt.values).all():
         ok("all RAF-DB raw codes mapped to the correct canonical id")
     else:
-        bad = int((mapped["label"].values != gt.values).sum()) #type:ignore
+        bad = int((mapped["label"].values != gt.values).sum())
         fail(f"{bad} RAF-DB labels mapped incorrectly")
         failures += 1
 
@@ -175,6 +175,31 @@ def main():
         ok("labels identical after reload+remap; all label_names canonical")
     else:
         fail("round-trip integrity broken")
+        failures += 1
+
+
+    # ---- TEST 6: multi-dataset unify order does not skip later datasets ----
+    print("\nTEST 6 — Mapping one dataset must not mark the others as mapped")
+    fer_rows = pd.DataFrame({
+        "image_path": [f"FER2013/f{i}.jpg" for i in range(7)],
+        "label": list(range(7)),
+        "dataset": "FER2013",
+    })
+    raf_rows = pd.DataFrame({
+        "image_path": [f"RAFDB/r{i}.jpg" for i in range(7)],
+        "label": list(range(1, 8)),       # raw RAF-DB 1-7
+        "dataset": "RAFDB",
+    })
+    combined2 = pd.concat([fer_rows, raf_rows], ignore_index=True)
+    # unify() maps dataset-by-dataset; FER2013 first stamps the flag column
+    combined2 = map_labels_to_emotions(combined2, "FER2013")
+    combined2 = map_labels_to_emotions(combined2, "RAFDB")
+    raf_out = combined2[combined2["dataset"] == "RAFDB"]
+    if len(raf_out) == 7 and set(raf_out["label"]) == set(range(7)):
+        ok("RAF-DB fully remapped after FER2013 pass (no rows dropped)")
+    else:
+        fail(f"RAF-DB lost rows or was not remapped: {len(raf_out)} rows, "
+             f"labels {sorted(raf_out['label'].unique())}")
         failures += 1
 
     print("\n" + "=" * 66)

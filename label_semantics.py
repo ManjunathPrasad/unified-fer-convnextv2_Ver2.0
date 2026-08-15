@@ -108,17 +108,24 @@ def is_already_mapped(df: pd.DataFrame) -> bool:
     """
     if MAPPED_FLAG in df.columns:
         try:
-            if bool(df[MAPPED_FLAG].astype(bool).all()):
+            flag = df[MAPPED_FLAG]
+            # NaN must NOT count as True. When another dataset's rows were
+            # mapped first, concat leaves this column NaN for these rows, and
+            # bool(nan) is True in numpy -- which previously caused an
+            # unmapped dataset to be skipped and its out-of-range labels
+            # (e.g. RAF-DB's raw 7) to be silently dropped.
+            if flag.notna().all() and bool(flag.fillna(False).astype(bool).all()):
                 return True
         except Exception:
             pass
 
     if "label_name" in df.columns:
-        names = (
-            df["label_name"].dropna().astype(str).str.strip().str.lower().unique()
-        )
-        if len(names) > 0 and all(n in CANONICAL_NAME_TO_ID for n in names):
-            return True
+        col = df["label_name"]
+        # Only trust this signal when EVERY row carries a canonical name.
+        if col.notna().all():
+            names = col.astype(str).str.strip().str.lower().unique()
+            if len(names) > 0 and all(n in CANONICAL_NAME_TO_ID for n in names):
+                return True
 
     return False
 
