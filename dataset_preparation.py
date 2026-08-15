@@ -22,6 +22,7 @@ Outputs:
 from pathlib import Path
 import shutil
 import zipfile
+from typing import Union, Optional
 import pandas as pd
 import numpy as np
 from PIL import Image
@@ -228,23 +229,23 @@ def _process_affectnet_image(args):
 # -------------------------------------------------------------------------
 # FER2013 preparation (LOCAL CSV ONLY)
 # -------------------------------------------------------------------------
-def prepare_fer2013(input_path: str, images_root: str, out_csv: str) -> Path:
-    images_root = Path(images_root) / "FER2013" #type:ignore
-    out_csv = Path(out_csv) #type:ignore
-    input_path = Path(input_path) #type:ignore
-    ensure_dir(images_root); ensure_dir(out_csv.parent) #type:ignore
+def prepare_fer2013(input_path: Union[str, Path], images_root: Union[str, Path], out_csv: Union[str, Path]) -> Path:
+    images_root = Path(images_root) / "FER2013"
+    out_csv = Path(out_csv)
+    input_path = Path(input_path)
+    ensure_dir(images_root); ensure_dir(out_csv.parent)
 
-    if not input_path.exists(): #type:ignore
+    if not input_path.exists():
         raise FileNotFoundError(f"FER2013 CSV not found at:\n{input_path}")
 
     logger.info("Reading FER2013 from local CSV…")
-    df, pixels_format, pixel_cols, has_usage = _detect_fer2013_format(input_path) #type:ignore
+    df, pixels_format, pixel_cols, has_usage = _detect_fer2013_format(input_path)
 
     if len(df) == 0 or pixels_format == "empty":
         logger.warning(f"FER2013 CSV is empty! Check the file at: {input_path}")
         out_df = pd.DataFrame(columns=["image_path", "label", "dataset", "Usage"])
         out_df.to_csv(out_csv, index=False)
-        return out_csv #type:ignore
+        return out_csv
 
     if pixels_format == "string":
         logger.info("Detected FER2013 format: pixels as space-separated string")
@@ -292,36 +293,43 @@ def prepare_fer2013(input_path: str, images_root: str, out_csv: str) -> Path:
         )
         out_df = out_df[~invalid].copy()
     out_df["label"] = out_df["label"].astype(int)
+    
+    # Filter to PublicTest partition only (3,589 images) to match the paper's dataset scope
+    # This addresses Reviewer 1 Q3 and Reviewer 3 Typo5: clarify dataset composition
+    if "Usage" in out_df.columns and len(out_df[out_df["Usage"] == "PublicTest"]) > 0:
+        before_count = len(out_df)
+        out_df = out_df[out_df["Usage"] == "PublicTest"].copy()
+        logger.info(f"Filtered FER2013 to PublicTest partition: {len(out_df)} images (from {before_count} total)")
     out_df.to_csv(out_csv, index=False)
     logger.info(f"FER2013 prepared: {len(out_df)} images (from {len(df)} total rows)")
-    return out_csv #type:ignore
+    return out_csv
 
 # -------------------------------------------------------------------------
 # RAF-DB (LOCAL ZIP ONLY)
 # -------------------------------------------------------------------------
-def prepare_rafdb(input_path: str, images_root: str, out_csv: str) -> Path:
-    images_root = Path(images_root) / "RAFDB" #type:ignore
-    out_csv = Path(out_csv) #type:ignore
-    input_path = Path(input_path) #type:ignore
-    ensure_dir(images_root); ensure_dir(out_csv.parent) #type:ignore
+def prepare_rafdb(input_path: Union[str, Path], images_root: Union[str, Path], out_csv: Union[str, Path]) -> Path:
+    images_root = Path(images_root) / "RAFDB"
+    out_csv = Path(out_csv)
+    input_path = Path(input_path)
+    ensure_dir(images_root); ensure_dir(out_csv.parent)
 
     # Check if we have an unzipped folder instead (common on Kaggle since it auto-extracts zip files)
-    unzipped_dir = input_path.parent / input_path.stem  # e.g., DATASET_DIR / "af-db" #type:ignore
+    unzipped_dir = input_path.parent / input_path.stem  # e.g., DATASET_DIR / "af-db"
     
-    if not input_path.exists() and unzipped_dir.exists() and unzipped_dir.is_dir(): #type:ignore
+    if not input_path.exists() and unzipped_dir.exists() and unzipped_dir.is_dir():
         logger.info(f"RAF-DB ZIP not found, but found unzipped directory: {unzipped_dir}. Bypassing extraction.")
         temp_dir = unzipped_dir
     else:
         # Check direct fallback directory named "af-db" in parent
-        fallback_dir = input_path.parent / "af-db" #type:ignore
-        if not input_path.exists() and fallback_dir.exists() and fallback_dir.is_dir(): #type:ignore
+        fallback_dir = input_path.parent / "af-db"
+        if not input_path.exists() and fallback_dir.exists() and fallback_dir.is_dir():
             logger.info(f"RAF-DB ZIP not found, but found fallback directory: {fallback_dir}. Bypassing extraction.")
             temp_dir = fallback_dir
         else:
-            if not input_path.exists(): #type:ignore
+            if not input_path.exists():
                 raise FileNotFoundError(f"RAF-DB ZIP not found at:\n{input_path} and no unzipped directory found.")
             
-            temp_dir = out_csv.parent / "rafdb_raw" #type:ignore
+            temp_dir = out_csv.parent / "rafdb_raw"
             if temp_dir.exists(): shutil.rmtree(temp_dir)
             ensure_dir(temp_dir)
 
@@ -379,7 +387,7 @@ def prepare_rafdb(input_path: str, images_root: str, out_csv: str) -> Path:
                         if not src:
                             continue
                         
-                        dest = images_root / Path(img_name).name #type:ignore
+                        dest = images_root / Path(img_name).name
                         process_args.append((str(src), str(dest), Path(img_name).name, label))
                     
                     # Process in parallel
@@ -464,23 +472,23 @@ def prepare_rafdb(input_path: str, images_root: str, out_csv: str) -> Path:
 
     pd.DataFrame(rows, columns=["image_path","label","dataset"]).to_csv(out_csv, index=False)
     logger.info(f"RAF-DB prepared: {len(rows)} images")
-    return out_csv  #type:ignore
+    return out_csv
 
 # -------------------------------------------------------------------------
 # AffectNet (LOCAL FOLDER ONLY)
 # -------------------------------------------------------------------------
-def prepare_affectnet(input_path: str, images_root: str, out_csv: str) -> Path:
-    images_root = Path(images_root) / "AffectNet" #type:ignore
-    out_csv = Path(out_csv) #type:ignore
-    input_path = Path(input_path) #type:ignore
-    ensure_dir(images_root); ensure_dir(out_csv.parent) #type:ignore
+def prepare_affectnet(input_path: Union[str, Path], images_root: Union[str, Path], out_csv: Union[str, Path]) -> Path:
+    images_root = Path(images_root) / "AffectNet"
+    out_csv = Path(out_csv)
+    input_path = Path(input_path)
+    ensure_dir(images_root); ensure_dir(out_csv.parent)
 
-    if not input_path.exists(): #type:ignore
+    if not input_path.exists():
         raise FileNotFoundError(f"AffectNet folder not found at:\n{input_path}")
 
     # Load labels.csv if present
     label_map = {}
-    labels_csv = input_path / "labels.csv" #type:ignore
+    labels_csv = input_path / "labels.csv"
     if labels_csv.exists():
         logger.info(f"Loading AffectNet labels from {labels_csv}...")
         try:
@@ -513,7 +521,7 @@ def prepare_affectnet(input_path: str, images_root: str, out_csv: str) -> Path:
     # Official AffectNet layout: only Train/ and Test/ subfolders (fixes count inflation)
     scan_roots = []
     for sub in ("Train", "Test"):
-        sub_dir = input_path / sub #type:ignore
+        sub_dir = input_path / sub
         if sub_dir.exists():
             scan_roots.append(sub_dir)
     if not scan_roots:
@@ -523,7 +531,7 @@ def prepare_affectnet(input_path: str, images_root: str, out_csv: str) -> Path:
     img_paths = []
     for root in scan_roots:
         img_paths.extend(
-            p for p in root.rglob("*") #type:ignore
+            p for p in root.rglob("*")
             if p.suffix.lower() in [".jpg", ".png", ".jpeg"]
         )
 
@@ -555,7 +563,7 @@ def prepare_affectnet(input_path: str, images_root: str, out_csv: str) -> Path:
 
         # Preserve Train/Test subfolder in output path
         split_subdir = "Test" if "test" in p.as_posix().lower() else "Train"
-        dest_path = images_root / split_subdir / p.name #type:ignore
+        dest_path = images_root / split_subdir / p.name
         img_name_with_subdir = f"{split_subdir}/{p.name}"
 
         process_args.append((str(p), str(dest_path), img_name_with_subdir, label))
@@ -581,7 +589,7 @@ def prepare_affectnet(input_path: str, images_root: str, out_csv: str) -> Path:
     out_df["label"] = out_df["label"].astype(int)
     out_df.to_csv(out_csv, index=False)
     logger.info(f"AffectNet prepared: {len(out_df)} images (valid 7-class labels only)")
-    return out_csv #type:ignore
+    return out_csv
 
 
 # -------------------------------------------------------------------------
@@ -635,24 +643,24 @@ def _load_affectnet_label_map(affectnet_dir: Path) -> dict:
 
 
 def rebuild_prepared_csv_from_images(
-    images_root: str,
+    images_root: Union[str, Path],
     dataset_name: str,
-    out_csv: str,
-    fer_orig_csv: str = None, #type:ignore
-    raf_zip_path: str = None, #type:ignore
-    affectnet_dir: str = None, #type:ignore
+    out_csv: Union[str, Path],
+    fer_orig_csv: Optional[Union[str, Path]] = None,
+    raf_zip_path: Optional[Union[str, Path]] = None,
+    affectnet_dir: Optional[Union[str, Path]] = None,
 ) -> Path:
     """
     Fast path when images already exist but prepared CSV was deleted.
     Scans images_root/{dataset_name}/ and writes a prepared CSV with correct labels.
     """
-    images_root = Path(images_root) #type:ignore
-    out_csv = Path(out_csv) #type:ignore
-    ensure_dir(out_csv.parent) #type:ignore
+    images_root = Path(images_root)
+    out_csv = Path(out_csv)
+    ensure_dir(out_csv.parent)
 
     folder_map = {"FER2013": "FER2013", "RAFDB": "RAFDB", "AffectNet": "AffectNet"}
     folder = folder_map.get(dataset_name, dataset_name)
-    img_dir = images_root / folder #type:ignore
+    img_dir = images_root / folder
     if not img_dir.exists():
         raise FileNotFoundError(f"Image folder not found: {img_dir}")
 
@@ -666,8 +674,8 @@ def rebuild_prepared_csv_from_images(
         except Exception as e:
             logger.warning(f"Could not load FER2013 Usage column: {e}")
 
-    raf_labels = _load_rafdb_label_map(Path(raf_zip_path)) if dataset_name == "RAFDB" else {}
-    aff_labels = _load_affectnet_label_map(Path(affectnet_dir)) if dataset_name == "AffectNet" else {}
+    raf_labels = _load_rafdb_label_map(Path(raf_zip_path)) if dataset_name == "RAFDB" and raf_zip_path is not None else {}
+    aff_labels = _load_affectnet_label_map(Path(affectnet_dir)) if dataset_name == "AffectNet" and affectnet_dir is not None else {}
 
     # Scan only relevant subfolders
     if dataset_name == "AffectNet":
@@ -706,7 +714,7 @@ def rebuild_prepared_csv_from_images(
 
     if not rows:
         logger.warning(f"No images found to rebuild CSV for {dataset_name}")
-        return out_csv #type:ignore
+        return out_csv
 
     df = pd.DataFrame(rows)
 
@@ -740,12 +748,12 @@ def rebuild_prepared_csv_from_images(
     df["label"] = df["label"].astype(int)
     df.to_csv(out_csv, index=False)
     logger.info(f"Rebuilt {dataset_name} CSV from images: {len(df)} rows → {out_csv}")
-    return out_csv #type:ignore
+    return out_csv
 
 # -------------------------------------------------------------------------
 # Create unified CSV
 # -------------------------------------------------------------------------
-def unify(fer_csv=None, raf_csv=None, aff_csv=None, images_root=None, unified_csv_out=None):
+def unify(fer_csv: Optional[Union[str, Path]] = None, raf_csv: Optional[Union[str, Path]] = None, aff_csv: Optional[Union[str, Path]] = None, images_root: Optional[Union[str, Path]] = None, unified_csv_out: Optional[Union[str, Path]] = None):
     """Unify multiple dataset CSVs into one. All CSV parameters are optional."""
     logger.info("Combining all datasets into unified CSV...")
     dfs = []
