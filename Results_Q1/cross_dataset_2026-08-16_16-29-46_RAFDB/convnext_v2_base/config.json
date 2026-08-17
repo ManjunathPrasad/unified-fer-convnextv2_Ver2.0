@@ -1,0 +1,28 @@
+{
+    "experiment_id": "cross_dataset_2026-08-16_16-29-46_RAFDB",
+    "model_name": "convnext_v2_base",
+    "git_commit": "2deeee33",
+    "timestamp": "2026-08-16_17-23-48",
+    "config": {
+        "batch_size": 8,
+        "num_workers": 4,
+        "input_size": 224,
+        "epochs_warm": 2,
+        "epochs_ft": 8,
+        "device": "cuda",
+        "results_dir": "Results_Q1",
+        "deterministic": true,
+        "use_amp": true,
+        "use_mixup": true,
+        "randaugment": true,
+        "use_novel_aug": true,
+        "use_ema": false,
+        "use_torch_compile": false,
+        "grad_accum_steps": 4,
+        "experiment_id": "cross_dataset_2026-08-16_16-29-46_RAFDB",
+        "csv_path": "emotion_q1_framework/Dataset/prepared/temp_balanced.csv",
+        "images_root": "emotion_q1_framework/Dataset/images",
+        "num_classes": 7,
+        "seed": 42
+    }
+}

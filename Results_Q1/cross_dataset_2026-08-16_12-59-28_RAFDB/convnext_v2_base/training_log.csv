@@ -1,0 +1,3 @@
+experiment_id,model,phase,epoch,train_loss,val_loss,train_acc,val_acc,lr,epoch_time_s,timestamp
+cross_dataset_2026-08-16_12-59-28_RAFDB,convnext_v2_base,warm,1,1.39449,0.989784,0.566023,0.755805,3.00e-05,241.39,2026-08-16_13-06-04
+cross_dataset_2026-08-16_12-59-28_RAFDB,convnext_v2_base,warm,2,1.019758,0.853018,0.766844,0.825861,3.00e-07,237.62,2026-08-16_13-10-02

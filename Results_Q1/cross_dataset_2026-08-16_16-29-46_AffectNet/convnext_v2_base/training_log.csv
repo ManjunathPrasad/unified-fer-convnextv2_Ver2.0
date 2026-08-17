@@ -1,0 +1,11 @@
+experiment_id,model,phase,epoch,train_loss,val_loss,train_acc,val_acc,lr,epoch_time_s,timestamp
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,warm,1,1.616991,1.242872,0.413574,0.603247,3.00e-05,290.17,2026-08-16_17-38-35
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,warm,2,1.229231,1.066397,0.639774,0.701578,3.00e-07,288.34,2026-08-16_17-43-24
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,3,1.144004,1.031482,0.693636,0.714841,8.66e-06,341.74,2026-08-16_17-49-06
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,4,1.096176,1.012871,0.719138,0.727418,7.70e-06,331.32,2026-08-16_17-54-37
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,5,1.061525,0.980843,0.738521,0.748228,6.25e-06,317.42,2026-08-16_17-59-54
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,6,0.877895,0.966024,0.799474,0.757603,4.55e-06,337.59,2026-08-16_18-05-32
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,7,0.843317,0.956144,0.82023,0.761262,2.84e-06,339.59,2026-08-16_18-11-12
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,8,0.815628,0.952141,0.832866,0.762406,1.40e-06,339.52,2026-08-16_18-16-51
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,9,0.803292,0.949224,0.842072,0.761034,4.29e-07,339.25,2026-08-16_18-22-31
+cross_dataset_2026-08-16_16-29-46_AffectNet,convnext_v2_base,finetune,10,0.788406,0.949184,0.848591,0.761948,9.00e-08,318.18,2026-08-16_18-27-49

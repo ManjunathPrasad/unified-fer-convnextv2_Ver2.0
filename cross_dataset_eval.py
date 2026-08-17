@@ -21,7 +21,7 @@ import argparse
 
 from dataset_preparation import prepare_fer2013, prepare_rafdb, prepare_affectnet
 from train_engine import run_training_pipeline, EmotionDataset, evaluate_model
-from model_factory import get_model
+from model_factory import get_model, normalize_model_name
 from augmentations import get_valid_transforms
 from utils import ensure_dir, generate_experiment_id, save_json
 from torch.utils.data import DataLoader
@@ -332,7 +332,11 @@ def run_cross_dataset_experiments(
                     config=config,
                 )
 
-                model_path = Path(config["results_dir"]) / config["experiment_id"] / model_name / f"{model_name}_best.pth"
+                # The trainer normalizes the model name (e.g. convnext_v2 -> convnext_v2_base)
+                # and saves under that folder/filename. Match it here, otherwise the
+                # checkpoint lookup misses by the "_base" suffix.
+                saved_name = normalize_model_name(model_name)
+                model_path = Path(config["results_dir"]) / config["experiment_id"] / saved_name / f"{saved_name}_best.pth"
 
                 test_datasets = [d for d in dataset_names if d != train_dataset]
 
@@ -352,6 +356,20 @@ def run_cross_dataset_experiments(
             except Exception as e:
                 print(f"Error training {model_name} on {train_dataset}: {e}")
                 continue
+            finally:
+                # Release GPU memory before the next fold. Each fold trains a
+                # fresh model in the same process; without this the previous
+                # fold's weights/optimizer stay resident and the next fold OOMs
+                # on an 8 GB card even though a single run fits.
+                try:
+                    del model
+                except Exception:
+                    pass
+                import gc
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.ipc_collect()
 
     # Save results
     save_json(all_results, str(results_dir / "cross_dataset_results.json"))
@@ -466,13 +484,21 @@ if __name__ == "__main__":
     parser.add_argument("--images", type=str, required=True, help="Path to images root")
     parser.add_argument("--num_classes", type=int, default=7)
     parser.add_argument("--models", type=str, nargs="+", default=["convnext_v2"])
+    parser.add_argument("--batch_size", type=int, default=16,
+                        help="Per-step batch (default 16 for 8 GB GPUs; raise to 32 on larger cards)")
+    parser.add_argument("--input_size", type=int, default=224,
+                        help="Input resolution (default 224 for 8 GB; 256 needs more VRAM)")
+    parser.add_argument("--no_ema", action="store_true",
+                        help="Disable EMA shadow weights (frees ~1 full model copy of VRAM)")
+    parser.add_argument("--no_compile", action="store_true",
+                        help="Disable torch.compile (frees graph buffers)")
 
     args = parser.parse_args()
 
     base_config = {
-        "batch_size": 32,
+        "batch_size": args.batch_size,
         "num_workers": 4,
-        "input_size": 256,
+        "input_size": args.input_size,
         "epochs_warm": 2,
         "epochs_ft": 8,
         "device": "cuda" if torch.cuda.is_available() else "cpu",
@@ -482,7 +508,18 @@ if __name__ == "__main__":
         "use_mixup": True,
         "randaugment": True,
         "use_novel_aug": True,
+        # Memory controls for small GPUs. EMA and torch.compile each cost a
+        # large chunk of VRAM at the moment the backbone unfreezes for
+        # fine-tuning; turning them off lets ConvNeXt-V2 Base fine-tune in 8 GB.
+        "use_ema": not args.no_ema,
+        "use_torch_compile": not args.no_compile,
+        "grad_accum_steps": max(1, 32 // args.batch_size),  # keep effective batch ~32
     }
+    print(f"[cross-dataset] batch={base_config['batch_size']} "
+          f"input={base_config['input_size']} "
+          f"ema={base_config['use_ema']} "
+          f"compile={base_config['use_torch_compile']} "
+          f"grad_accum={base_config['grad_accum_steps']}")
 
     results = run_cross_dataset_experiments(
         csv_path=args.csv,
